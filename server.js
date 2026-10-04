@@ -7,22 +7,30 @@ const Product = require('./models/Product');
 const app = express();
 app.use(express.json());
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/product_db';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://root:example@localhost:27017/product_db?authSource=admin';
 
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('MongoDB Connected'))
-  .catch(err => console.error('MongoDB Connection Error:', err));
+// Hàm kết nối MongoDB có cơ chế retry
+const connectWithRetry = () => {
+  console.log('MongoDB connecting with retry...');
+  mongoose.connect(MONGO_URI)
+    .then(() => console.log('MongoDB Connected Successfully'))
+    .catch(err => {
+      console.error('MongoDB Connection Error:', err.message);
+      setTimeout(connectWithRetry, 5000); // Thử kết nối lại sau 5 giây nếu thất bại
+    });
+};
+
+connectWithRetry();
 
 // Healthcheck route
 app.get('/health', (req, res) => {
   if (mongoose.connection.readyState === 1) {
     return res.status(200).json({ status: 'UP', database: 'CONNECTED' });
   }
-  return res.status(500).json({ status: 'DOWN', database: 'DISCONNECTED' });
+  return res.status(500).json({ status: 'DOWN', database: 'DISCONNECTED', state: mongoose.connection.readyState });
 });
 
 // CRUD Routes
-// Create
 app.post('/api/products', async (req, res) => {
   try {
     const product = new Product(req.body);
@@ -33,7 +41,6 @@ app.post('/api/products', async (req, res) => {
   }
 });
 
-// Read All
 app.get('/api/products', async (req, res) => {
   try {
     const products = await Product.find();
@@ -43,7 +50,6 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-// Read One
 app.get('/api/products/:pid', async (req, res) => {
   try {
     const product = await Product.findOne({ pid: req.params.pid });
@@ -54,7 +60,6 @@ app.get('/api/products/:pid', async (req, res) => {
   }
 });
 
-// Update
 app.put('/api/products/:pid', async (req, res) => {
   try {
     const product = await Product.findOneAndUpdate({ pid: req.params.pid }, req.body, { new: true });
@@ -65,7 +70,6 @@ app.put('/api/products/:pid', async (req, res) => {
   }
 });
 
-// Delete
 app.delete('/api/products/:pid', async (req, res) => {
   try {
     const product = await Product.findOneAndDelete({ pid: req.params.pid });
