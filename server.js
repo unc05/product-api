@@ -9,18 +9,19 @@ app.use(express.json());
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://root:example@nammongodb:27017/product_db?authSource=admin';
 
-// Hàm tự động thử lại kết nối MongoDB nếu chưa sẵn sàng
+// Hàm tự động thử lại kết nối mỗi 3 giây nếu chưa kết nối thành công
 const connectWithRetry = () => {
-  console.log('MongoDB connecting with retry...');
+  if (mongoose.connection.readyState === 1) return;
+  console.log('Connecting to MongoDB...');
   mongoose.connect(MONGO_URI)
     .then(() => console.log('>>> MONGODB CONNECTED SUCCESS <<<'))
     .catch(err => {
       console.error('>>> MONGODB CONNECT ERROR:', err.message);
-      setTimeout(connectWithRetry, 3000); // Thử lại sau 3 giây
     });
 };
 
 connectWithRetry();
+setInterval(connectWithRetry, 3000); // Thử kết nối định kỳ mỗi 3s
 
 // Healthcheck route
 app.get('/health', (req, res) => {
@@ -31,7 +32,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Các CRUD Routes
+// Các CRUD Routes giữ nguyên...
 app.post('/api/products', async (req, res) => {
   try {
     const product = new Product(req.body);
