@@ -21,8 +21,12 @@ jobs:
           sleep 15
           docker compose ps
 
-      - name: Test API Healthcheck Endpoint
+      - name: Run CI Tests via Docker Compose
         run: |
+          docker compose up -d --build
+          echo "Waiting for MongoDB and API to be fully healthy..."
+          sleep 30
+          docker compose ps
           curl --fail http://localhost:3000/health || exit 1
 
       - name: Test CRUD Operations
