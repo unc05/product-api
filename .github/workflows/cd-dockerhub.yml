@@ -16,7 +16,7 @@ jobs:
       - name: Run CI Tests via Docker Compose
         run: |
           docker compose up -d --build
-          echo "Waiting for MongoDB and API to be fully ready..."
+          echo "Waiting for MongoDB and API to connect..."
           sleep 25
           docker compose ps
           curl --fail http://localhost:3000/health || exit 1
