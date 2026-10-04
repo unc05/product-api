@@ -1,0 +1,47 @@
+name: Test Product CI Prod
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build and Start containers via Docker Compose
+        run: docker compose up -d --build
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for services healthcheck..."
+          sleep 15
+          docker compose ps
+
+      - name: Test API Healthcheck Endpoint
+        run: |
+          curl --fail http://localhost:3000/health || exit 1
+
+      - name: Test CRUD Operations
+        run: |
+          # 1. Create Product
+          echo "Testing CREATE..."
+          CREATE_RES=$(curl -s -X POST http://localhost:3000/api/products \
+            -H "Content-Type: application/json" \
+            -d '{"pid":"P001","pname":"Laptop","price":1200,"quantity":10}')
+          echo "Response: $CREATE_RES"
+
+          # 2. Get All Products
+          echo "Testing READ ALL..."
+          curl -s -X GET http://localhost:3000/api/products
+
+          # 3. Delete Product
+          echo "Testing DELETE..."
+          curl -s -X DELETE http://localhost:3000/api/products/P001
+
+      - name: Stop and cleanup containers
+        if: always()
+        run: docker compose down -v

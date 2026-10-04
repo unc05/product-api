@@ -1,0 +1,39 @@
+name: Continuous Deployment to Docker Hub
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  ci-and-cd:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 1. CI Healthcheck & Test
+      - name: Run CI Tests via Docker Compose
+        run: |
+          docker compose up -d --build
+          sleep 15
+          curl --fail http://localhost:3000/health || exit 1
+
+      - name: Clean up test containers
+        run: docker compose down -v
+
+      # 2. CD - Push image to Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/product-api:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/product-api:${{ github.sha }}

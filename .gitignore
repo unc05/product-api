@@ -1,0 +1,10 @@
+# Bỏ qua biến môi trường chứa thông tin nhạy cảm
+.env
+
+# Bỏ qua thư mục thư viện Node (rất nặng)
+node_modules/
+
+# Bỏ qua các file log và hệ điều hành
+npm-debug.log*
+.DS_Store
+Thumbs.db
