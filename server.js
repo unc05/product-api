@@ -1,29 +1,25 @@
+global.crypto = require('crypto'); // Thêm dòng này ở dòng 1
 const express = require('express');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
 const Product = require('./models/Product');
-
 const app = express();
 app.use(express.json());
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://root:example@nammongodb:27017/product_db?authSource=admin';
 
-// Hàm tự động thử lại kết nối mỗi 3 giây nếu chưa kết nối thành công
 const connectWithRetry = () => {
   if (mongoose.connection.readyState === 1) return;
   console.log('Connecting to MongoDB...');
   mongoose.connect(MONGO_URI)
     .then(() => console.log('>>> MONGODB CONNECTED SUCCESS <<<'))
-    .catch(err => {
-      console.error('>>> MONGODB CONNECT ERROR:', err.message);
-    });
+    .catch(err => console.error('>>> MONGODB CONNECT ERROR:', err.message));
 };
 
 connectWithRetry();
-setInterval(connectWithRetry, 3000); // Thử kết nối định kỳ mỗi 3s
+setInterval(connectWithRetry, 3000);
 
-// Healthcheck route
 app.get('/health', (req, res) => {
   const isConnected = mongoose.connection.readyState === 1;
   res.status(200).json({
@@ -32,7 +28,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Các CRUD Routes giữ nguyên...
+// Các tuyến API CRUD giữ nguyên...
 app.post('/api/products', async (req, res) => {
   try {
     const product = new Product(req.body);
