@@ -4,7 +4,8 @@ const productSchema = new mongoose.Schema({
   pid: { type: String, required: true, unique: true },
   pname: { type: String, required: true },
   price: { type: Number, required: true },
-  quantity: { type: Number, required: true }
+  quantity: { type: Number, required: true },
+  description: { type: String } 
 });
 
 module.exports = mongoose.model('Product', productSchema);
