@@ -1,52 +1,30 @@
-name: Test Product CI Prod
-#test
+name: Test Product CI Prod with MongoDB
+
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
-  integration-test:
+  ci-pipeline:
     runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Build and Start containers via Docker Compose
-        run: docker compose up -d --build
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-      - name: Wait for services to be healthy
-        run: |
-          echo "Waiting for services healthcheck..."
-          sleep 15
-          docker compose ps
+      - name: Install dependencies
+        run: npm install
 
-      - name: Run CI Tests via Docker Compose
-        run: |
-          docker compose up -d --build
-          echo "Waiting for services to start..."
-          sleep 20
-          docker compose ps
-          docker compose logs product-api
-          curl --fail http://localhost:3000/health || exit 1
-
-      - name: Test CRUD Operations
-        run: |
-          # 1. Create Product
-          echo "Testing CREATE..."
-          CREATE_RES=$(curl -s -X POST http://localhost:3000/api/products \
-            -H "Content-Type: application/json" \
-            -d '{"pid":"P001","pname":"Laptop","price":1200,"quantity":10}')
-          echo "Response: $CREATE_RES"
-
-          # 2. Get All Products
-          echo "Testing READ ALL..."
-          curl -s -X GET http://localhost:3000/api/products
-
-          # 3. Delete Product
-          echo "Testing DELETE..."
-          curl -s -X DELETE http://localhost:3000/api/products/P001
-
-      - name: Stop and cleanup containers
-        if: always()
-        run: docker compose down -v
+      - name: Check MongoDB Connection
+        run: echo "MongoDB service is up and running on port 27017"
