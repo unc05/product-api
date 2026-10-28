@@ -8,6 +8,13 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
     ports:
       - "27017:27017"
+    # ➕ Kiểm tra sức khỏe cho MongoDB
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   product-api:
     build: .
@@ -19,4 +26,12 @@ services:
       PORT: 3000
       MONGO_URI: mongodb://root:example@nammongodb:27017/product_db?authSource=admin
     depends_on:
-      - nammongodb
+      nammongodb:
+        condition: service_healthy # Đợi MongoDB healthy rồi app mới khởi chạy
+    # ➕ Kiểm tra sức khỏe cho Node.js API (sử dụng endpoint /health)
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
